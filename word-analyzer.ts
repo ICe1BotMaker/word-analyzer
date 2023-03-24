@@ -5,6 +5,9 @@ interface Ioption {
 
     // grammer
     grammer: string;
+
+    // delimiter
+    delimiter: any;
 }
 
 // words
@@ -33,17 +36,48 @@ const wordAnalyzer = {
 
     // analyze grammar
     analyzeGrammar: (text: string) => {
+        // split line
         text.split(`\n`)
         .forEach((line: string, idx: number) => {
-            if (line.startsWith(commentText)) return;
+            // skip comment
+            if (line.startsWith(commentText) || line.trim() === ``) return;
 
             // closing text error
             if (endText !== undefined && !line.endsWith(endText))
                 throw new SyntaxError(`line: ${idx}\nYou must add '${endText}' at the end of a sentence.`);
 
-            line.split(` `)
-            .forEach((word: string) => {
-                
+            // check grammer
+            words.forEach((wordObj: any) => {
+                wordObj.option.grammer.match(/\(\|\<[a-zA-Z]+\>\|\)/g)
+                .forEach((match: string) => {
+                    // typeof (|<type>|)
+                    let type1 = eval(String(match.match(/[a-zA-Z]+/g)?.[0]))();
+
+                    // typeof data
+                    let type2;
+
+                    if (wordObj.option.delimiter === undefined) {
+                        type2 = line.replace(wordObj.word, ``);
+                    } else if (wordObj.option.delimiter !== undefined) {
+                        type2 = line.replace(wordObj.word, ``).split(wordObj.option.delimiter)[1];
+                    }
+
+                    console.log(typeof type1, type2);
+
+                    // // value type error
+                    // if (typeof type1 !== typeof type2)
+                    //     throw new TypeError(`line: ${idx}\nInserted value is not in type '${type1}'`);
+                    
+                    
+                    // // result
+                    // if (wordObj.option.type === `print`) {
+                    //     console.log(type2);
+                    // }
+
+                    // if (wordObj.option.type === `variable`) {
+                    //     console.log(type1, type2);
+                    // }
+                });
             });
         });
     }
@@ -53,10 +87,20 @@ const wordAnalyzer = {
 wordAnalyzer.setClosingText(`;`);
 
 wordAnalyzer.insertWord(`@print`, {
-    type: `log`,
-    grammer: `@print (|<String>|)`,
+    type: `print`,
+    grammer: `@print (|<String>|);`,
+    delimiter: undefined
+});
+
+wordAnalyzer.insertWord(`@var`, {
+    type: `variable`,
+    grammer: `@var (|<String>|): (|<Number>|);`,
+    delimiter: `:`
 });
 
 wordAnalyzer.analyzeGrammar(
-    `@print 'hello, world!';`
+    `
+    @print 'hello, world!';
+    @var test: 1;
+    `
 );
