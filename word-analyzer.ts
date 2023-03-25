@@ -32,7 +32,7 @@ const wordAnalyzer = {
     setClosingText: (text: string) => endText = text,
 
     // set comment text
-    defineCommentText: (text: string) => endText = text,
+    defineCommentText: (text: string) => commentText = text,
 
     // analyze grammar
     analyzeGrammar: (text: string) => {
@@ -45,39 +45,33 @@ const wordAnalyzer = {
             // closing text error
             if (endText !== undefined && !line.endsWith(endText))
                 throw new SyntaxError(`line: ${idx}\nYou must add '${endText}' at the end of a sentence.`);
-
-            // check grammer
+                
             words.forEach((wordObj: any) => {
-                wordObj.option.grammer.match(/\(\|\<[a-zA-Z]+\>\|\)/g)
-                .forEach((match: string) => {
-                    // typeof (|<type>|)
-                    let type1 = eval(String(match.match(/[a-zA-Z]+/g)?.[0]))();
+                const grammarReg = new RegExp(wordObj.option.grammer.replace(/\(\|\<[a-zA-Z]+\>\|\)/g, `(\\w+)`));
+                const type = wordObj.option.grammer.match(/\(\|\<[a-zA-Z]+\>\|\)/g);
 
-                    // typeof data
-                    let type2;
+                if (!grammarReg.test(line))
+                    throw new SyntaxError(`line: ${idx}\nThe grammar is incorrect.`);
 
-                    if (wordObj.option.delimiter === undefined) {
-                        type2 = line.replace(wordObj.word, ``);
-                    } else if (wordObj.option.delimiter !== undefined) {
-                        type2 = line.replace(wordObj.word, ``).split(wordObj.option.delimiter)[1];
-                    }
+                // type.forEach((match: string) => {
+                //     const type1 = typeof eval(String(match.match(/[a-zA-Z]+/g)?.[0]))();
 
-                    console.log(typeof type1, type2);
+                //     console.log(type1);
+                // });
 
-                    // // value type error
-                    // if (typeof type1 !== typeof type2)
-                    //     throw new TypeError(`line: ${idx}\nInserted value is not in type '${type1}'`);
-                    
-                    
-                    // // result
-                    // if (wordObj.option.type === `print`) {
-                    //     console.log(type2);
-                    // }
+                // // value type error
+                // if (typeof type1 !== typeof type2)
+                //     throw new TypeError(`line: ${idx}\nInserted value is not in type '${type1}'`);
+                
+                
+                // // result
+                // if (wordObj.option.type === `print`) {
+                //     console.log(type2);
+                // }
 
-                    // if (wordObj.option.type === `variable`) {
-                    //     console.log(type1, type2);
-                    // }
-                });
+                // if (wordObj.option.type === `variable`) {
+                //     console.log(type1, type2);
+                // }
             });
         });
     }
@@ -85,10 +79,11 @@ const wordAnalyzer = {
 
 // test
 wordAnalyzer.setClosingText(`;`);
+wordAnalyzer.defineCommentText(`//`);
 
 wordAnalyzer.insertWord(`@print`, {
     type: `print`,
-    grammer: `@print (|<String>|);`,
+    grammer: `@print '(|<String>|)';`,
     delimiter: undefined
 });
 
@@ -98,9 +93,4 @@ wordAnalyzer.insertWord(`@var`, {
     delimiter: `:`
 });
 
-wordAnalyzer.analyzeGrammar(
-    `
-    @print 'hello, world!';
-    @var test: 1;
-    `
-);
+wordAnalyzer.analyzeGrammar(`@print 'asdf';`);
