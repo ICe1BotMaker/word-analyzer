@@ -1,112 +1,107 @@
 'use strict';
 
-// options interface
+// insertWord option interface
 interface Ioption {
-    // function type
+    // return type
     type: string;
 
-    // grammer
+    // use grammer
     grammer: string;
-
-    // delimiter
-    delimiter: undefined | string;
 }
 
-// words
+// inserted word
 let words: object[] = [];
 
-// closing text
+// end of sentence text
 let endText: string;
 
-// comment text
+// annotation
 let commentText: string;
 
 /**
- * Word Analyzer 0.0.1 (test)
+ * ### Word Analyzer 0.0.1 (test)
  * 
  * It's just a library that makes simple language.
+ * 
+ * - official document: https://github.com/ICe1BotMaker/word-analyzer
  */
 const wordAnalyzer = {
     // insert word
     insertWord: (word: string, option: Ioption) => words = [...words, {word: word, option: option}],
 
-    // set closing text
+    // set end of sentence text
     setClosingText: (text: string) => endText = text,
 
-    // set comment text
+    // set annotation text
     defineCommentText: (text: string) => commentText = text,
 
-    // analyze grammar
+    // grammar checker
     analyzeGrammar: (text: string) => {
-        // split line
+        // separate full text into lines
         text.split(`\n`)
         .forEach((line: string, idx: number) => {
-            // skip comment
+            // pass annotation
             if (line.startsWith(commentText) || line.trim() === ``) return;
 
-            // closing text error
+            // end of sentence text error
             if (endText !== undefined && !line.endsWith(endText))
                 throw new SyntaxError(`line: ${idx}\nYou must add '${endText}' at the end of a sentence.`);
-                
-            words.forEach((wordObj: any, wordIdx: number) => {
+            
+            words.forEach((wordObj: any) => {
+                // grammer to regexp
                 const grammarReg = new RegExp(wordObj.option.grammer.replace(/\(\|\<[a-zA-Z]+\>\|\)/g, `([^\\s]*[\\s\\w]+[^\\s]*)`));
-
-                const typeMatch = wordObj.option.grammer.match(/\(\|\<[a-zA-Z]+\>\|\)/g);
-                let types: string[] = [];
-                typeMatch.forEach((e: any) => types = [...types, typeof eval(String(e.match(/(\w+)/)?.[0]))()]);
                 
                 if (grammarReg.test(line)) {
                     line.match(grammarReg)?.forEach((match: string, matchIdx: number) => {
+                        // get including special characters type in regexp
+                        const typeMatch = wordObj.option.grammer.match(/\(\|\<[a-zA-Z]+\>\|\)/g);
+
+                        // get real type in typeMatch
+                        let types: string[] = [];
+                        typeMatch.forEach((e: any) => types = [...types, typeof eval(String(e.match(/(\w+)/)?.[0]))()]);
+
                         if (matchIdx === 0) return;
 
+                        // capitalize the first letter
                         let type = types[matchIdx - 1].replace(/^[a-z]/, char => char.toUpperCase());
 
-                        if (types[matchIdx - 1] !== typeof eval(type)(match) || isNaN(eval(type)(match)))
-                            throw new TypeError(`line: ${idx}\nInserted value is not in type '${types[matchIdx - 1]}'`);
-
-                        // if (types[matchIdx] !== typeof match)
-                        //     throw new TypeError(`line: ${idx}\nInserted value is not in type '${types[matchIdx]}'`);
-                    });
+                        // check for correct type
+                        if (types[matchIdx - 1] !== typeof eval(type)() || types[matchIdx - 1] === 'number' && isNaN(Number(match)))
+                            throw new TypeError(`line: ${idx}\n${match} is not in type '${types[matchIdx - 1]}'`);
                 
-                    // // result
-                    // if (wordObj.option.type === `print`) {
-                    //     console.log(type2);
-                    // }
-    
-                    // if (wordObj.option.type === `variable`) {
-                    //     console.log(type1, type2);
-                    // }
+                        
+                        // set type result
+                        if (wordObj.option.type === `print`) {
+                            console.log(match);
+                        }
+        
+                        if (wordObj.option.type === `variable`) {
+                            console.log(type);
+                        }
+                    });
                 }
-
-                // if (!grammarReg.test(line))
-                //     throw new SyntaxError(`line: ${idx}\nThe grammar is incorrect.`);
-
-                // if (typeof type1 !== typeof type2)
-                //     throw new TypeError(`line: ${idx}\nInserted value is not in type '${type1}'`);
             });
         });
     }
 }
 
-// test
+
 wordAnalyzer.setClosingText(`;`);
 wordAnalyzer.defineCommentText(`//`);
 
 wordAnalyzer.insertWord(`@print`, {
     type: `print`,
     grammer: `@print '(|<String>|)';`,
-    delimiter: undefined
 });
 
 wordAnalyzer.insertWord(`@var`, {
     type: `variable`,
     grammer: `@var (|<String>|): (|<Number>|);`,
-    delimiter: `:`
 });
 
 wordAnalyzer.analyzeGrammar(
     `
     @var asdf: 1;
-    @print 'test, asdf';
+    @print 'test';
     `
 );
