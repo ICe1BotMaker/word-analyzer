@@ -1,3 +1,5 @@
+'use strict';
+
 // options interface
 interface Ioption {
     // function type
@@ -7,11 +9,11 @@ interface Ioption {
     grammer: string;
 
     // delimiter
-    delimiter: any;
+    delimiter: undefined | string;
 }
 
 // words
-let words: any[] = [];
+let words: object[] = [];
 
 // closing text
 let endText: string;
@@ -47,15 +49,24 @@ const wordAnalyzer = {
                 throw new SyntaxError(`line: ${idx}\nYou must add '${endText}' at the end of a sentence.`);
                 
             words.forEach((wordObj: any, wordIdx: number) => {
-                const grammarReg = new RegExp(wordObj.option.grammer.replace(/\(\|\<[a-zA-Z]+\>\|\)/g, `(\\w+)`));
+                const grammarReg = new RegExp(wordObj.option.grammer.replace(/\(\|\<[a-zA-Z]+\>\|\)/g, `([^\\s]*[\\s\\w]+[^\\s]*)`));
 
                 const typeMatch = wordObj.option.grammer.match(/\(\|\<[a-zA-Z]+\>\|\)/g);
                 let types: string[] = [];
                 typeMatch.forEach((e: any) => types = [...types, typeof eval(String(e.match(/(\w+)/)?.[0]))()]);
                 
                 if (grammarReg.test(line)) {
-                    // console.log(types);
-                    console.log(line.match(grammarReg)?.[2]);
+                    line.match(grammarReg)?.forEach((match: string, matchIdx: number) => {
+                        if (matchIdx === 0) return;
+
+                        let type = types[matchIdx - 1].replace(/^[a-z]/, char => char.toUpperCase());
+
+                        if (types[matchIdx - 1] !== typeof eval(type)(match) || isNaN(eval(type)(match)))
+                            throw new TypeError(`line: ${idx}\nInserted value is not in type '${types[matchIdx - 1]}'`);
+
+                        // if (types[matchIdx] !== typeof match)
+                        //     throw new TypeError(`line: ${idx}\nInserted value is not in type '${types[matchIdx]}'`);
+                    });
                 
                     // // result
                     // if (wordObj.option.type === `print`) {
@@ -95,7 +106,7 @@ wordAnalyzer.insertWord(`@var`, {
 
 wordAnalyzer.analyzeGrammar(
     `
-    @print 'asdf';
-    @var test: 1;
+    @var asdf: 1;
+    @print 'test, asdf';
     `
 );
