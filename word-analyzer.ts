@@ -74,9 +74,9 @@ const wordAnalyzer = {
                         if (wordObj.option.type === `print`) {
                             console.log(match);
                         }
-        
+
                         if (wordObj.option.type === `variable`) {
-                            console.log(type);
+                            console.log(`type: ${type}, value: ${match}`);
                         }
                     });
                 }
@@ -89,9 +89,26 @@ const wordAnalyzer = {
 wordAnalyzer.setClosingText(`;`);
 wordAnalyzer.defineCommentText(`//`);
 
-wordAnalyzer.insertWord(`@print`, {
+// wordAnalyzer.insertWord(`@print`, {
+//     type: `print`,
+//     grammer: `@print '(|<String>|)';`,
+// });
+
+// wordAnalyzer.insertWord(`@var`, {
+//     type: `variable`,
+//     grammer: `@var (|<String>|): (|<Number>|);`,
+// });
+
+// wordAnalyzer.analyzeGrammar(
+//     `
+//     @var asdf: 1;
+//     @print 'test';
+//     `
+// );
+
+wordAnalyzer.insertWord(`printf`, {
     type: `print`,
-    grammer: `@print '(|<String>|)';`,
+    grammer: `printf('(|<String>|)');`,
 });
 
 wordAnalyzer.insertWord(`@var`, {
