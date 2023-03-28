@@ -9,14 +9,26 @@ interface Ioption {
     grammer: string;
 }
 
-// inserted word
-let words: object[] = [];
+// word analyzer interface
+interface IWordAnalyzer {
+    // inserted word
+    words: { word: string; option: Ioption }[];
 
-// end of sentence text
-let endText: string;
+    // end of sentence text
+    endText: string;
 
-// annotation
-let commentText: string;
+    // annotation
+    commentText: string;
+
+    // variables
+    variables: { key: string; value: (string | undefined) }[];
+
+    // functions
+    insertWord: Function;
+    setClosingText: Function;
+    defineCommentText: Function;
+    analyzeGrammar: Function;
+}
 
 /**
  * ### Word Analyzer 0.0.1 (test)
@@ -25,15 +37,22 @@ let commentText: string;
  * 
  * - official document: https://github.com/ICe1BotMaker/word-analyzer
  */
-const wordAnalyzer = {
+
+const wordAnalyzer: IWordAnalyzer = {
+    words: [],
+    endText: ``,
+    commentText: ``,
+
+    variables: [],
+
     // insert word
-    insertWord: (word: string, option: Ioption) => words = [...words, {word: word, option: option}],
+    insertWord: (word: string, option: Ioption) => wordAnalyzer.words = [...wordAnalyzer.words, { word: word, option: option }],
 
     // set end of sentence text
-    setClosingText: (text: string) => endText = text,
+    setClosingText: (text: string) => wordAnalyzer.endText = text,
 
     // set annotation text
-    defineCommentText: (text: string) => commentText = text,
+    defineCommentText: (text: string) => wordAnalyzer.commentText = text,
 
     // grammar checker
     analyzeGrammar: (text: string) => {
@@ -41,13 +60,13 @@ const wordAnalyzer = {
         text.split(`\n`)
         .forEach((line: string, idx: number) => {
             // pass annotation
-            if (line.startsWith(commentText) || line.trim() === ``) return;
+            if (line.startsWith(wordAnalyzer.commentText) || line.trim() === ``) return;
 
             // end of sentence text error
-            if (endText !== undefined && !line.endsWith(endText))
-                throw new SyntaxError(`line: ${idx}\nYou must add '${endText}' at the end of a sentence.`);
+            if (wordAnalyzer.endText !== undefined && !line.endsWith(wordAnalyzer.endText))
+                throw new SyntaxError(`line: ${idx}\nYou must add '${wordAnalyzer.endText}' at the end of a sentence.`);
             
-            words.forEach((wordObj: any) => {
+            wordAnalyzer.words.forEach((wordObj: any) => {
                 // grammer to regexp
                 const grammarReg = new RegExp(wordObj.option.grammer.replace(/\(\|\<[a-zA-Z]+\>\|\)/g, `([^\\s]*[\\s\\w]+[^\\s]*)`));
                 
@@ -72,11 +91,23 @@ const wordAnalyzer = {
                         
                         // set type result
                         if (wordObj.option.type === `print`) {
-                            console.log(match);
+                            let result: string = ``;
+
+                            wordAnalyzer.variables.forEach((e: any) => {
+                                if (e.key === match) {
+                                    result = e.value;
+                                } else {
+                                    result = match;
+                                }
+                            });
+
+                            console.log(result);
                         }
 
                         if (wordObj.option.type === `variable`) {
-                            console.log(`type: ${type}, value: ${match}`);
+                            if (line.match(grammarReg)?.[matchIdx + 1] === undefined) return;
+
+                            wordAnalyzer.variables = [...wordAnalyzer.variables, { key: match, value: line.match(grammarReg)?.[matchIdx + 1] }];
                         }
                     });
                 }
@@ -89,26 +120,9 @@ const wordAnalyzer = {
 wordAnalyzer.setClosingText(`;`);
 wordAnalyzer.defineCommentText(`//`);
 
-// wordAnalyzer.insertWord(`@print`, {
-//     type: `print`,
-//     grammer: `@print '(|<String>|)';`,
-// });
-
-// wordAnalyzer.insertWord(`@var`, {
-//     type: `variable`,
-//     grammer: `@var (|<String>|): (|<Number>|);`,
-// });
-
-// wordAnalyzer.analyzeGrammar(
-//     `
-//     @var asdf: 1;
-//     @print 'test';
-//     `
-// );
-
-wordAnalyzer.insertWord(`printf`, {
+wordAnalyzer.insertWord(`@print`, {
     type: `print`,
-    grammer: `printf('(|<String>|)');`,
+    grammer: `@print (|<String>|);`,
 });
 
 wordAnalyzer.insertWord(`@var`, {
@@ -119,6 +133,6 @@ wordAnalyzer.insertWord(`@var`, {
 wordAnalyzer.analyzeGrammar(
     `
     @var asdf: 1;
-    @print 'test';
+    @print asdf;
     `
 );
